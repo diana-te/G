@@ -52,7 +52,7 @@ return (new class {
         $habis = [];
 		$coins = ['ltc', 'usdc'];
 		$coinIdx = 0;
-        $curr = '';
+        $curr = $coins[$coinIdx];
         $skipped = [];
         $claimed = 0;
         
@@ -319,6 +319,7 @@ return (new class {
 											$curr = '';
 										}
                                     }
+									}
                                     
                                     if (stripos($cla, 'has been sent')) $success_in_page = true;
                                 
