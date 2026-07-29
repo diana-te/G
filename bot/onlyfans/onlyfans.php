@@ -212,7 +212,7 @@ return (new class {
                                 
                             }
                             
-                            styler("waiting for next claim", fn() => _sle(rand(8, 15)));
+                            styler("waiting for next claim", fn() => _sle(rand(10, 12)));
                         }
                         
                     }
