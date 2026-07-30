@@ -52,8 +52,10 @@ return (new class {
     
     public function exec() {
         $habis = [];
-        $curr = 'ltc';
-        $skipped = [];
+		$coins = ['ltc', 'usdc'];
+		$coinIdx = 0;
+		$curr = $coins[$coinIdx];
+		$skipped = [];
         
         login:
             Proxy::load();
@@ -170,6 +172,11 @@ return (new class {
                                 if (str_contains($fau, 'limit for this coin reached')) {
                                     #_put('fau.html', $fau); 
                                     $habis[$fa] = true;
+									$coinIdx++;
+									if ($coinIdx < count($coins)) {
+										$curr = $coins[$coinIdx];
+										$habis = [];
+									}
                                     break;
                                 }
                             }
@@ -195,6 +202,11 @@ return (new class {
                                 
                                 if (preg_match('/sufficient|could not be processed|faucet limit/i', $msg)) {
                                     $habis[$fa] = true;
+									$coinIdx++;
+									if ($coinIdx < count($coins)) {
+										$curr = $coins[$coinIdx];
+										$habis = [];
+									}
                                     break;
                                 }
                                 
