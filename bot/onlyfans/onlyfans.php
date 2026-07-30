@@ -52,7 +52,7 @@ return (new class {
         $habis = [];
 		$coins = ['ltc', 'usdc'];
 		$coinIdx = 0;
-        $curr = $coins[$coinIdx];
+		$curr = $coins[$coinIdx];
         $skipped = [];
         $claimed = 0;
         
@@ -186,23 +186,23 @@ return (new class {
                                 $this->logger($stt, 'fct', $msg);
                                 
                                 if (preg_match('/sufficient|could not be processed/i', $msg)) {
-									$habis[$fa] = true;
+                                    $habis[$fa] = true;
 									$coinIdx++;
 									if ($coinIdx < count($coins)) {
 										$curr = $coins[$coinIdx];
 										$habis = [];
 									}
-									break;
+                                    break;
                                 }
                                 
                                 if (preg_match('/blacklisted|flagged|banned/i', $msg)) die;
                                 
-                                if (preg_match('/went wron/i', $msg)) break;
-                                
-                                if (preg_match('/cation failed/i', $msg)) {
-                                    #_sle(10);
-                                    continue 3;
+                                if (preg_match('/went wron/i', $msg)) {
+                                    _sle(60);
+                                    break;
                                 }
+                                
+                                if (preg_match('/cation failed/i', $msg)) continue 3;
                                 
                                 if (stripos($msg, 'Shortlink')) {
                                     if ($this->SLDONE) die;
@@ -212,7 +212,7 @@ return (new class {
                                 
                             }
                             
-                            styler("waiting for next claim", fn() => _sle(rand(10, 12)));
+                            styler("waiting for next claim", fn() => _sle(rand(8, 15)));
                         }
                         
                     }
@@ -311,15 +311,17 @@ return (new class {
                                         $this->logger($stt, 'sho', $msg);
                                         
                                         if (preg_match('/sufficient|could not be processed/i', $msg)) {
-											$coinIdx++;
-											if ($coinIdx < count($coins)) {
+                                            $coinIdx++;
+                                            if ($coinIdx < count($coins)) {
 												$curr = $coins[$coinIdx];
 												$skipped = [];
-										} else {
-											$curr = '';
-										}
+											} else {
+												$curr = '';
+											}
+                                            
+                                        }
+                                        break 3;
                                     }
-									}
                                     
                                     if (stripos($cla, 'has been sent')) $success_in_page = true;
                                 
