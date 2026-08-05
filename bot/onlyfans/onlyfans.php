@@ -26,7 +26,7 @@ return (new class {
         $this->api = onKeys();
         $this->domain = parse_url($this->host, PHP_URL_HOST);
         
-        $this->acc = Config::credential(['ua' => fn() => Config::uagent('mobile')], false, ['login', 'PROXY']);
+        $this->acc = Config::credential(['ua' => fn() => Config::uagent()], false, ['login', 'PROXY']);
         putenv("PROXY=" . $this->acc['PROXY']);
         
         Proxy::load();
@@ -50,9 +50,7 @@ return (new class {
     
     public function exec() {
         $habis = [];
-		$coins = ['ltc', 'usdc'];
-		$coinIdx = 0;
-		$curr = $coins[$coinIdx];
+        $curr = 'ltc';
         $skipped = [];
         $claimed = 0;
         
@@ -61,6 +59,8 @@ return (new class {
         login:
             Proxy::load();
             Check::Geo();
+        
+        $this->_ck();
         
         while (true) {
             $dash = null;
@@ -104,6 +104,7 @@ return (new class {
                 }
                 
                 if ($po) {
+                    $this->_ck();
                     #print_r($po); die;
                     $ve = Net::X($f['url'], 'POST', $po, Inf::$cookie, $this->headersCF, $this->host.$this->r, Inf::$uagent);
                     #_put('ve.html', $ve); die;
@@ -164,7 +165,10 @@ return (new class {
                                 
                                 if (isset($cap['nocaptcha']) && isset($pa['captcha_answer'])) $cap = $this->onfCap($fau, $this->host, $fa, $this->api);
                                 
-                                if (isset($cap['trouble'])) continue;
+                                if (isset($cap['trouble'])) {
+                                    _sle(10);
+                                    continue;
+                                }
                                 $po = array_merge($pa, $cap);
                                 
                             } else {
@@ -174,7 +178,7 @@ return (new class {
                         }
                         
                         if (!empty($po)) {
-                            #print_r($po); die;
+                            #print_r($po); #die;
                             $cla = Net::X($f['url'], 'POST', $po, Inf::$cookie, $this->headersCF, $fa, Inf::$uagent);
                             #_put('cla.html', $cla); #die;
                             
@@ -186,21 +190,14 @@ return (new class {
                                 $this->logger($stt, 'fct', $msg);
                                 
                                 if (preg_match('/sufficient|could not be processed/i', $msg)) {
-                                    $habis[$fa] = true;
-									$coinIdx++;
-									if ($coinIdx < count($coins)) {
-										$curr = $coins[$coinIdx];
-										$habis = [];
-									}
+                                    if ($curr === 'ltc') $curr = 'usdc'; // Cukup ubah koin
+									$habis[$fa] = true;
                                     break;
                                 }
                                 
                                 if (preg_match('/blacklisted|flagged|banned/i', $msg)) die;
                                 
-                                if (preg_match('/went wron/i', $msg)) {
-                                    _sle(60);
-                                    break;
-                                }
+                                if (preg_match('/went wron/i', $msg)) die;
                                 
                                 if (preg_match('/cation failed/i', $msg)) continue 3;
                                 
@@ -311,12 +308,12 @@ return (new class {
                                         $this->logger($stt, 'sho', $msg);
                                         
                                         if (preg_match('/sufficient|could not be processed/i', $msg)) {
-                                            $coinIdx++;
-                                            if ($coinIdx < count($coins)) {
-												$curr = $coins[$coinIdx];
-												$skipped = [];
+                                            if ($curr === 'ltc') {
+												$curr = 'usdc'; // Cukup ubah koin
 											} else {
-												$curr = '';
+												$sidx = array_search($sl, $_sl);
+												if ($sidx !== false && isset($_sl[$sidx + 1])) $curr = basename($_sl[$sidx + 1]);
+												else $curr = '';
 											}
                                             
                                         }
@@ -336,6 +333,7 @@ return (new class {
                     }
                     if (!$found_one) {
                         $this->logger('err', 'sho', 'SL habis atau sisa blacklist');
+						if ($curr === 'ltc') $curr = 'usdc'; // Cukup ubah koin
                         $this->SLDONE = true;
                         break; 
                     }
@@ -355,6 +353,7 @@ return (new class {
     
 
     private function onfCap($html, $host, $reff) {
+        
         $setCAP = microtime(true);
         $img = null;
         $x_cap = ['ins' => 'ASC', 'cnt' => 3];
@@ -371,34 +370,34 @@ return (new class {
                 'cnt' => (int)($req['headers']['x-captcha-target-count'][0] ?? 3)
             ];
             $img = $req['body'] ?? null;
+            
         }
         
         if (!empty($img)) {
-            if (!AUTH_KEY) $this->logger('err', "unauthorized apikey", 'contact owner', true);
+            #_put(microtime(1).'.png', $img);
             $solution = Solve::img($this->api, $reff, 'onlyfans', $img);
-            #var_dump($solution);
-            
             if (isset($solution['trouble'])) return ['trouble' => 'reload'];
-            if (count($solution) < $x_cap['cnt']) return ['trouble' => 'reload']; 
             
-            usort($solution, function($a, $b) use ($x_cap) {
-                return ($x_cap['ins'] === 'ASC') ? ($a['area'] <=> $b['area']) : ($b['area'] <=> $a['area']);
-            });
+            preg_match_all('/x[=:\s]*(\d+)[,\s]*y[=:\s]*(\d+)/i', $solution, $matches, PREG_SET_ORDER);
             
-            $clk = array_slice($solution, 0, $x_cap['cnt']);
+            if (count($matches) < $x_cap['cnt']) return ['trouble' => 'reload'];
+            
+            if ($x_cap['ins'] === 'DESC') $matches = array_reverse($matches);
+            
+            $clk = array_slice($matches, 0, $x_cap['cnt']);
             
             $mdt = [];
             $ANS = [];
             $setCLK = microtime(true);
             
-            foreach ($clk as $index => $obj) {
+            foreach ($clk as $index => $match) {
                 $delay = ($index === 0) ? mt_rand(800000, 1200000) : mt_rand(400000, 700000);
                 usleep($delay);
                 
                 $current = (microtime(true) - $setCLK) * 1000;
                 
-                $x = (int)max(0, min(449, $obj['center'][0]));
-                $y = (int)max(0, min(279, $obj['center'][1]));
+                $x = (int)max(0, min(449, $match[1]));
+                $y = (int)max(0, min(279, $match[2]));
                 
                 $ANS[] = "$x,$y";
                 $mdt[] = [
@@ -496,4 +495,10 @@ return (new class {
             
     }
     
+    private function _ck() {
+        $ccc = $this->adcookie(true);
+        foreach ($ccc as $nn => $vv) Inf::injectCookie(Inf::$cookie, $vv, $this->host, $nn);
+    }
+    
 })->exec();
+
