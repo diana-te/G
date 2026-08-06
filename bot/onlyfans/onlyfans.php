@@ -197,7 +197,7 @@ return (new class {
                                 
                                 if (preg_match('/blacklisted|flagged|banned/i', $msg)) die;
                                 
-                                if (preg_match('/went wron/i', $msg)) die;
+                                if (preg_match('/went wron/i', $msg)) continue 3;
                                 
                                 if (preg_match('/cation failed/i', $msg)) continue 3;
                                 
@@ -209,7 +209,7 @@ return (new class {
                                 
                             }
                             
-                            styler("waiting for next claim", fn() => _sle(rand(8, 15)));
+                            styler("waiting for next claim", fn() => _sle(rand(10, 12)));
                         }
                         
                     }
